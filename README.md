@@ -15,6 +15,10 @@ A full-stack lead management application for tracking learning centre enquiries 
 
 **Rule: Audit Log for Status Changes (last digit 6)** — Every status change on a lead is recorded in a `status_audit_logs` table with old status, new status, who changed it, and why. This provides a complete audit trail for pipeline movements, admin overrides, and auto-advances triggered by follow-up outcomes.
 
+## Screen Recording
+
+[Watch Demo Video (3–5 min)](https://drive.google.com/file/d/1SRGS44TYjMzjDACMx_QZ8CaWYoRNpv9f/view?usp=sharing) — Setup, key flows, validation failure, and code decision walkthrough.
+
 ## Setup
 
 ### Prerequisites
