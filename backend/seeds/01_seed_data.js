@@ -216,7 +216,7 @@ exports.seed = async function (knex) {
     // Lead 7 (Lakshmi — New, overdue)
     { lead_id: leadIds[6], followed_up_at: daysAgo(1), channel: 'In-Person', outcome: 'Reached', notes: 'Walk-in enquiry. Took her contact. Will call tomorrow.', next_followup_at: daysFromNow(0) },
     // Lead 8 (Deepak — Contacted, overdue)
-    { lead_id: leadIds[7], followed_up_at: daysAgo(4), channel: 'Phone', outcome: 'No Answer', notes: 'Called twice. No response.', next_followup_at: daysFromNow(-2) },
+    { lead_id: leadIds[7], followed_up_at: daysAgo(4), channel: 'Phone', outcome: 'No Response', notes: 'Called twice. No response.', next_followup_at: daysFromNow(-2) },
     { lead_id: leadIds[7], followed_up_at: daysAgo(2), channel: 'Email', outcome: 'Reached', notes: 'Sent follow-up email with brochure.', next_followup_at: daysFromNow(-2) },
     // Lead 11 (Neha — Contacted)
     { lead_id: leadIds[10], followed_up_at: daysAgo(1), channel: 'Phone', outcome: 'Reached', notes: 'Discussed STEM program. Parent interested.', next_followup_at: daysFromNow(1) },
