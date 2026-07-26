@@ -2,16 +2,17 @@
 
 A full-stack lead management application for tracking learning centre enquiries across multiple locations.
 
-## Tech Stack
+## Candidate Details
 
-- **Frontend:** React (Vite)
-- **Backend:** Node.js + Express
-- **Database:** MySQL (via Knex.js)
-- **Validation:** express-validator
-- **CSV Export:** json2csv
-- **Testing:** Vitest + React Testing Library (frontend), Node.js test runner (backend)
+| Field | Value |
+|-------|-------|
+| **Name** | Vinay Vadlakonda |
+| **Candidate Code** | 31716 |
+| **Frontend** | React.js (Vite) |
+| **Backend** | Node.js + Express |
+| **Database** | MySQL (Knex.js) |
 
-## Candidate Code: 31716
+## Candidate-Specific Rule
 
 **Rule: Audit Log for Status Changes (last digit 6)** — Every status change on a lead is recorded in a `status_audit_logs` table with old status, new status, who changed it, and why. This provides a complete audit trail for pipeline movements, admin overrides, and auto-advances triggered by follow-up outcomes.
 
@@ -98,10 +99,10 @@ npm run dev             # Starts on http://localhost:5173
 ### Tables
 
 - **centres** — 5 learning centres (name, city, address, phone)
-- **owners** — 4 centre leads/owners (name, email, phone, is_admin)
-- **leads** — Enquiry records (parent/child info, phone, status, timestamps)
+- **owners** — 4 team members (name, email, phone, is_admin)
+- **leads** — 25 enquiry records (parent/child info, phone, status, timestamps)
 - **followups** — Activity log per lead (channel, outcome, notes, next_followup_at)
-- **archive_logs** — Audit trail for archive/restore actions
+- **archive_logs** — Archive/restore audit trail
 - **status_audit_logs** — Every status change with old/new values, who changed it, and why
 
 ### Key Design Decisions
@@ -111,64 +112,60 @@ npm run dev             # Starts on http://localhost:5173
 - **Closed leads**: Status "Converted" or "Lost" → only `notes` can be edited.
 - **Status flow**: New → Contacted → Demo Scheduled → Demo Completed → Converted/Lost (admin can override).
 - **Overdue detection**: `next_followup_at < NOW()` flags non-closed leads needing immediate attention.
-- **Dates**: MySQL stores UTC (`DATETIME`); Knex inserts/reads raw UTC values. Backend utility `dates.js` converts UTC → IST via `toLocaleString('en-IN', {timeZone: 'Asia/Kolkata'})` for API display. Frontend `formatIST()` applies the same IST conversion for UI rendering. CSV export uses raw `new Date().toISOString()` (UTC ISO 8601) so spreadsheet apps can localise on import.
+- **Dates**: MySQL stores UTC (`DATETIME`); Knex inserts/reads raw UTC values. Backend converts UTC → IST via `toLocaleString('en-IN', {timeZone: 'Asia/Kolkata'})` for API display. Frontend `formatIST()` applies the same IST conversion. CSV export uses UTC ISO 8601 format.
 
 ### Index Rationale
 
 | Table | Index | Why |
 |-------|-------|-----|
-| leads | `phone_normalized` | Duplicate detection on create/update — must be fast equality lookup |
-| leads | `status` | Dashboard GROUP BY status + filter by status on list page |
-| leads | `centre_id` | Filter leads by centre (list page + dashboard) |
-| leads | `owner_id` | Filter leads by owner (list page + dashboard) |
-| leads | `is_archived` | Default query excludes archived; archived page shows only archived |
-| leads | `next_followup_at` | Overdue followup query: `WHERE next_followup_at < NOW()` |
-| leads | `(is_archived, status)` | Composite for dashboard status bar chart (always filters both) |
-| followups | `lead_id` | Fetch followups for a lead — most frequent query pattern |
-| followups | `followed_up_at` | Timeline ordering: `ORDER BY followed_up_at DESC` |
-| archive_logs | `lead_id` | Audit trail lookup per lead |
-| status_audit_logs | `lead_id` | Status history per lead — most common query pattern |
-| status_audit_logs | `new_status` | Filter by status type in audit queries |
+| leads | `phone_normalized` | Duplicate detection — fast equality lookup |
+| leads | `status` | Dashboard GROUP BY + filter |
+| leads | `centre_id` | Filter by centre |
+| leads | `owner_id` | Filter by owner |
+| leads | `is_archived` | Default query excludes archived |
+| leads | `next_followup_at` | Overdue detection query |
+| leads | `(is_archived, status)` | Composite for dashboard bar chart |
+| followups | `lead_id` | Fetch followups per lead |
+| followups | `followed_up_at` | Timeline ordering |
+| archive_logs | `lead_id` | Audit trail per lead |
+| status_audit_logs | `lead_id` | Status history per lead |
+| status_audit_logs | `new_status` | Filter by status type |
 
 ## Decision Log
 
 | # | Decision | Rationale |
 |---|----------|-----------|
-| 1 | **Phone normalization — last 10 digits, strip non-digits** | Handles all Indian phone formats (+91, 0-prefix, spaces, dashes). Single normalized column enables fast duplicate lookups via simple equality check. |
-| 2 | **Soft delete with restore (Rule: C001)** | Lost leads may become opportunities again. Archive logs provide audit trail. Restore checks for phone duplicates before allowing restoration. |
-| 3 | **Knex.js over raw SQL queries** | Migration system + query builder reduces boilerplate, prevents SQL injection, and makes schema version-controlled. Knex is lightweight enough for this project's scale. |
-| 4 | **Closed leads — notes-only editing** | Converted/Lost leads represent final decisions. Allowing full edits would corrupt pipeline data. Notes-only keeps communication history editable while preserving data integrity. |
-| 5 | **Bar chart for status distribution** | Shows pipeline health at a glance — most important dashboard view for a centre lead tracking team. |
-| 6 | **Status audit log (Rule: 31716 — last digit 6)** | Every status change is recorded with old/new status, who changed it, and why. Covers manual updates, admin overrides, and auto-advances from follow-up outcomes. Provides accountability without requiring authentication. |
-
-## AI Usage Note
-
-This project was built with the assistance of AI (Claude by Anthropic). AI was used for:
-- Initial project scaffolding and boilerplate generation
-- Database schema design review and validation
-- Code review, bug detection, and fix suggestions
-- Test case design and assertion patterns
-- Documentation structure and content
-
-One suggestion rejected: AI suggested adding JWT authentication from the start. I chose to leave auth out of the MVP scope to focus on core lead management flows, documenting it as a known limitation instead.
-
-All code was reviewed, tested, and verified manually before committing.
+| 1 | **Phone normalization — last 10 digits, strip non-digits** | Handles all Indian phone formats (+91, 0-prefix, spaces, dashes). Single normalized column enables fast duplicate lookups. |
+| 2 | **Soft delete with restore** | Lost leads may become opportunities again. Archive logs provide audit trail. Restore checks for phone duplicates. |
+| 3 | **Knex.js over raw SQL** | Migration system + query builder prevents SQL injection and makes schema version-controlled. |
+| 4 | **Closed leads — notes-only editing** | Converted/Lost are final decisions. Full edits would corrupt pipeline data. |
+| 5 | **Bar chart for status distribution** | Shows pipeline health at a glance — most important view for the team. |
+| 6 | **Status audit log (Rule: 31716)** | Every status change recorded with old/new status, changed by, and reason. Accountability without authentication. |
 
 ## Known Limitations
 
-1. **No authentication/authorization** — all endpoints are publicly accessible. In production, JWT or session-based auth would be required.
-2. **No real-time updates** — dashboard and lead lists require manual refresh. WebSocket support could add live updates.
-3. **No email/SMS integration** — followup channels are tracked manually. Integration with Twilio/SendGrid could automate outreach.
-4. **No file uploads** — notes are text-only. Supporting document attachments (e.g., signed enrollment forms) would require file storage.
-5. **No multi-tenancy** — single database serves all centres. A SaaS version would need tenant isolation.
-6. **Date filtering is UTC-based** — MySQL stores datetimes in UTC. IST conversion happens at display level only.
+1. **No authentication/authorization** — all endpoints are publicly accessible.
+2. **No real-time updates** — dashboard requires manual refresh.
+3. **No email/SMS integration** — followup channels tracked manually.
+4. **Date filtering is UTC-based** — IST conversion happens at display level only.
 
 ## Future Improvements
 
-1. **Role-based access control (RBAC)** — differentiate admin, centre lead, and viewer permissions.
-2. **Automated followup reminders** — email/SMS notifications for overdue followups.
+1. **Role-based access control (RBAC)** — admin, centre lead, viewer permissions.
+2. **Automated followup reminders** — email/SMS for overdue followups.
 3. **Lead scoring** — algorithmic prioritization based on engagement signals.
-4. **Bulk operations** — CSV import, bulk status updates, bulk archive/restore.
-5. **Analytics dashboard** — conversion rates, average time-to-convert, owner performance trends.
-6. **Activity timeline** — chronological feed of all actions across leads.
-7. **Mobile responsive PWA** — installable on phones for field staff.
+4. **Conversion analytics dashboard** — conversion rates, time-to-convert, owner trends.
+
+## AI Usage Note
+
+Approximately **30% of this project** was developed with the assistance of **ChatGPT**. AI was used for:
+- Project scaffolding and boilerplate generation
+- Database schema review and migration structure
+- Code review and bug fix suggestions
+- Test case design patterns
+
+All AI-assisted code was reviewed, tested, and verified manually before committing.
+
+## GitHub
+
+Repository: [github.com/vinayvadlakondagoud/centre-lead-tracker](https://github.com/vinayvadlakondagoud/centre-lead-tracker)
