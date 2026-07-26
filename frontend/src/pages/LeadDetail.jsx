@@ -18,6 +18,8 @@ export default function LeadDetail() {
   const [showFollowupForm, setShowFollowupForm] = useState(false);
   const [followupForm, setFollowupForm] = useState({ channel: 'Phone', outcome: 'Reached', followed_up_at: '', notes: '', next_followup_at: '' });
   const [followupLoading, setFollowupLoading] = useState(false);
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [showAudit, setShowAudit] = useState(false);
 
   const fetchLead = useCallback(async () => {
     setLoading(true);
@@ -33,6 +35,16 @@ export default function LeadDetail() {
   }, [id]);
 
   useEffect(() => { fetchLead(); }, [fetchLead]);
+
+  const fetchAuditLogs = async () => {
+    try {
+      const result = await api.getAuditLog(id);
+      setAuditLogs(result.data);
+      setShowAudit(true);
+    } catch (err) {
+      alert('Failed to load audit log: ' + err.message);
+    }
+  };
 
   const handleArchive = async () => {
     if (!window.confirm('Archive this lead? It will be hidden from the main list but can be restored.')) return;
@@ -95,6 +107,7 @@ export default function LeadDetail() {
               <button onClick={handleArchive} className="btn btn-danger">Archive</button>
             </>
           )}
+          <button onClick={fetchAuditLogs} className="btn btn-secondary">Audit Log</button>
         </div>
       </div>
 
@@ -164,6 +177,31 @@ export default function LeadDetail() {
           <p className="text-muted">No follow-ups recorded yet.</p>
         )}
       </div>
+
+      {/* Status Audit Log */}
+      {showAudit && (
+        <div className="followups-section">
+          <h2>Status Change History</h2>
+          {auditLogs.length > 0 ? (
+            <div className="followups-timeline">
+              {auditLogs.map((log) => (
+                <div key={log.id} className="followup-card">
+                  <div className="followup-header">
+                    <span className="followup-channel">{log.old_status || '(created)'}</span>
+                    <span style={{ margin: '0 8px' }}>&rarr;</span>
+                    <span className="followup-outcome">{log.new_status}</span>
+                    <span className="followup-date">{formatIST(log.created_at)}</span>
+                  </div>
+                  {log.changed_by && <p className="followup-notes">By: {log.changed_by}</p>}
+                  {log.reason && <p className="followup-notes">{log.reason}</p>}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-muted">No status changes recorded yet.</p>
+          )}
+        </div>
+      )}
 
       {/* Add Followup Modal */}
       <Modal isOpen={showFollowupForm} onClose={() => setShowFollowupForm(false)} title="Add Follow-up">

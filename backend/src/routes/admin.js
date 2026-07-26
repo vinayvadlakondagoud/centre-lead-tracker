@@ -12,6 +12,7 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const db = require('../config/db');
 const { validate } = require('../middleware/validate');
+const { logStatusChange } = require('../utils/audit');
 
 const router = express.Router();
 
@@ -102,11 +103,24 @@ router.patch(
 
       if (!lead) return res.status(404).json({ success: false, error: 'Lead not found' });
 
+      const oldStatus = lead.status;
+
       // Allow any status change from admin
       await db('leads').where('id', id).update({
         status: req.body.status,
         updated_at: db.fn.now(),
       });
+
+      // Audit: log admin status override
+      if (req.body.status !== oldStatus) {
+        logStatusChange({
+          lead_id: id,
+          old_status: oldStatus,
+          new_status: req.body.status,
+          changed_by: 'admin',
+          reason: req.body.reason || 'Admin status override',
+        });
+      }
 
       const updated = await db('leads')
         .join('centres', 'leads.centre_id', 'centres.id')

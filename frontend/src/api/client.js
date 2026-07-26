@@ -34,6 +34,7 @@ export const api = {
   updateLead: (id, data) => request(`/leads/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   archiveLead: (id, data = {}) => request(`/leads/${id}/archive`, { method: 'PATCH', body: JSON.stringify(data) }),
   restoreLead: (id, data = {}) => request(`/leads/${id}/restore`, { method: 'PATCH', body: JSON.stringify(data) }),
+  getAuditLog: (id) => request(`/leads/${id}/audit`),
 
   // Followups
   getFollowups: (leadId) => request(`/followups/${leadId}`),

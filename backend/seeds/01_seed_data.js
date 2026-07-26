@@ -1,10 +1,11 @@
 /**
- * Seed data — Centres, Owners, Leads, Follow-ups
+ * Seed data — Centres, Owners, Leads, Follow-ups, Audit Logs
  * At least 20 realistic leads across multiple centres and statuses.
  */
 
 exports.seed = async function (knex) {
   // Clear in order (foreign keys)
+  await knex('status_audit_logs').del();
   await knex('archive_logs').del();
   await knex('followups').del();
   await knex('leads').del();
@@ -233,4 +234,28 @@ exports.seed = async function (knex) {
   ];
 
   await knex('followups').insert(followupsData);
+
+  // ── Status Audit Logs ────────────────────────────────────────────
+  const auditData = [
+    // Lead 6 (Priyanka — Converted)
+    { lead_id: leadIds[5], old_status: null, new_status: 'New', changed_by: 'system', reason: 'Lead created' },
+    { lead_id: leadIds[5], old_status: 'New', new_status: 'Contacted', changed_by: 'system', reason: 'Auto-advance: followup outcome "Interested"' },
+    { lead_id: leadIds[5], old_status: 'Contacted', new_status: 'Demo Scheduled', changed_by: 'owner:2', reason: 'Demo booked for Saturday' },
+    { lead_id: leadIds[5], old_status: 'Demo Scheduled', new_status: 'Demo Completed', changed_by: 'owner:2', reason: null },
+    { lead_id: leadIds[5], old_status: 'Demo Completed', new_status: 'Converted', changed_by: 'owner:2', reason: 'Parent signed up for 6-month plan' },
+    // Lead 7 (Amit — Lost)
+    { lead_id: leadIds[6], old_status: null, new_status: 'New', changed_by: 'system', reason: 'Lead created' },
+    { lead_id: leadIds[6], old_status: 'New', new_status: 'Contacted', changed_by: 'system', reason: 'Auto-advance: followup outcome "Connected"' },
+    { lead_id: leadIds[6], old_status: 'Contacted', new_status: 'Lost', changed_by: 'owner:3', reason: 'Chose competitor near home' },
+    // Lead 10 (Sanjay — Converted)
+    { lead_id: leadIds[9], old_status: null, new_status: 'New', changed_by: 'system', reason: 'Lead created' },
+    { lead_id: leadIds[9], old_status: 'New', new_status: 'Contacted', changed_by: 'system', reason: 'Auto-advance: followup outcome "Interested"' },
+    { lead_id: leadIds[9], old_status: 'Contacted', new_status: 'Demo Scheduled', changed_by: 'owner:4', reason: null },
+    { lead_id: leadIds[9], old_status: 'Demo Scheduled', new_status: 'Demo Completed', changed_by: 'owner:4', reason: null },
+    { lead_id: leadIds[9], old_status: 'Demo Completed', new_status: 'Converted', changed_by: 'owner:4', reason: 'Enrolled for summer batch' },
+    // Admin override example
+    { lead_id: leadIds[11], old_status: 'Demo Completed', new_status: 'Contacted', changed_by: 'admin', reason: 'Admin status override — parent requested re-evaluation' },
+  ];
+
+  await knex('status_audit_logs').insert(auditData);
 };

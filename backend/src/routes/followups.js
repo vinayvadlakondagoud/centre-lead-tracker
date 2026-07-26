@@ -11,6 +11,7 @@ const express = require('express');
 const { body, param } = require('express-validator');
 const db = require('../config/db');
 const { validate } = require('../middleware/validate');
+const { logStatusChange } = require('../utils/audit');
 
 const router = express.Router({ mergeParams: true });
 
@@ -79,7 +80,17 @@ router.post(
         'Connected': 'Contacted',
       };
       if (statusMap[req.body.outcome] && lead.status === 'New') {
-        await db('leads').where('id', leadId).update({ status: statusMap[req.body.outcome], updated_at: db.fn.now() });
+        const newStatus = statusMap[req.body.outcome];
+        await db('leads').where('id', leadId).update({ status: newStatus, updated_at: db.fn.now() });
+
+        // Audit: log auto-advance
+        logStatusChange({
+          lead_id: leadId,
+          old_status: 'New',
+          new_status: newStatus,
+          changed_by: 'system',
+          reason: `Auto-advance: followup outcome "${req.body.outcome}"`,
+        });
       }
 
       const followup = await db('followups').where('id', fid).first();

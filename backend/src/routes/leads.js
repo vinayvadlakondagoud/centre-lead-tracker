@@ -14,6 +14,7 @@ const { body, param, query } = require('express-validator');
 const db = require('../config/db');
 const { normalizePhone } = require('../utils/phone');
 const { validate } = require('../middleware/validate');
+const { logStatusChange } = require('../utils/audit');
 
 const router = express.Router();
 
@@ -163,6 +164,15 @@ router.post(
         .first();
 
       res.status(201).json({ success: true, data: lead });
+
+      // Audit: log initial status
+      logStatusChange({
+        lead_id: leadId,
+        old_status: null,
+        new_status: req.body.status || 'New',
+        changed_by: req.body.owner_id ? `owner:${req.body.owner_id}` : 'system',
+        reason: 'Lead created',
+      });
     } catch (err) {
       next(err);
     }
@@ -278,7 +288,19 @@ router.put(
 
       updates.updated_at = db.fn.now();
 
+      const oldStatus = lead.status;
       await db('leads').where('id', id).update(updates);
+
+      // Audit: log status change if status was modified
+      if (req.body.status && req.body.status !== oldStatus) {
+        logStatusChange({
+          lead_id: id,
+          old_status: oldStatus,
+          new_status: req.body.status,
+          changed_by: req.body.performed_by || `owner:${lead.owner_id}`,
+          reason: req.body.reason || null,
+        });
+      }
 
       const updated = await db('leads')
         .join('centres', 'leads.centre_id', 'centres.id')
@@ -364,6 +386,24 @@ router.patch('/:id/restore', async (req, res, next) => {
     });
 
     res.json({ success: true, message: 'Lead restored successfully' });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── GET /api/leads/:id/audit — Status change history ────────────────
+router.get('/:id/audit', async (req, res, next) => {
+  try {
+    const id = parseInt(req.params.id);
+    const lead = await db('leads').where('id', id).first();
+
+    if (!lead) return res.status(404).json({ success: false, error: 'Lead not found' });
+
+    const logs = await db('status_audit_logs')
+      .where('lead_id', id)
+      .orderBy('created_at', 'desc');
+
+    res.json({ success: true, data: logs });
   } catch (err) {
     next(err);
   }

@@ -11,9 +11,9 @@ A full-stack lead management application for tracking learning centre enquiries 
 - **CSV Export:** json2csv
 - **Testing:** Vitest + React Testing Library (frontend), Node.js test runner (backend)
 
-## Candidate Code: C001
+## Candidate Code: 31716
 
-**Rule: Soft Delete with Restore** — Archived leads are hidden by default but can be restored at any time. An `archive_logs` table tracks all archive/restore actions.
+**Rule: Audit Log for Status Changes (last digit 6)** — Every status change on a lead is recorded in a `status_audit_logs` table with old status, new status, who changed it, and why. This provides a complete audit trail for pipeline movements, admin overrides, and auto-advances triggered by follow-up outcomes.
 
 ## Setup
 
@@ -52,6 +52,7 @@ npm run dev             # Starts on http://localhost:5173
 | PUT | `/api/leads/:id` | Update lead |
 | PATCH | `/api/leads/:id/archive` | Archive (soft delete) |
 | PATCH | `/api/leads/:id/restore` | Restore archived lead |
+| GET | `/api/leads/:id/audit` | Status change audit log |
 | **Followups** | | |
 | GET | `/api/followups/:leadId` | List followups for a lead |
 | POST | `/api/followups/:leadId` | Add followup |
@@ -97,6 +98,7 @@ npm run dev             # Starts on http://localhost:5173
 - **leads** — Enquiry records (parent/child info, phone, status, timestamps)
 - **followups** — Activity log per lead (channel, outcome, notes, next_followup_at)
 - **archive_logs** — Audit trail for archive/restore actions
+- **status_audit_logs** — Every status change with old/new values, who changed it, and why
 
 ### Key Design Decisions
 
@@ -121,6 +123,8 @@ npm run dev             # Starts on http://localhost:5173
 | followups | `lead_id` | Fetch followups for a lead — most frequent query pattern |
 | followups | `followed_up_at` | Timeline ordering: `ORDER BY followed_up_at DESC` |
 | archive_logs | `lead_id` | Audit trail lookup per lead |
+| status_audit_logs | `lead_id` | Status history per lead — most common query pattern |
+| status_audit_logs | `new_status` | Filter by status type in audit queries |
 
 ## Decision Log
 
@@ -131,6 +135,7 @@ npm run dev             # Starts on http://localhost:5173
 | 3 | **Knex.js over raw SQL queries** | Migration system + query builder reduces boilerplate, prevents SQL injection, and makes schema version-controlled. Knex is lightweight enough for this project's scale. |
 | 4 | **Closed leads — notes-only editing** | Converted/Lost leads represent final decisions. Allowing full edits would corrupt pipeline data. Notes-only keeps communication history editable while preserving data integrity. |
 | 5 | **Bar chart for status distribution** | Shows pipeline health at a glance — most important dashboard view for a centre lead tracking team. |
+| 6 | **Status audit log (Rule: 31716 — last digit 6)** | Every status change is recorded with old/new status, who changed it, and why. Covers manual updates, admin overrides, and auto-advances from follow-up outcomes. Provides accountability without requiring authentication. |
 
 ## AI Usage Note
 
@@ -140,6 +145,8 @@ This project was built with the assistance of AI (Claude by Anthropic). AI was u
 - Code review, bug detection, and fix suggestions
 - Test case design and assertion patterns
 - Documentation structure and content
+
+One suggestion rejected: AI suggested adding JWT authentication from the start. I chose to leave auth out of the MVP scope to focus on core lead management flows, documenting it as a known limitation instead.
 
 All code was reviewed, tested, and verified manually before committing.
 
