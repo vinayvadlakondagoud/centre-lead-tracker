@@ -156,7 +156,7 @@ npm run dev             # Starts on http://localhost:5173
 3. **Lead scoring** — algorithmic prioritization based on engagement signals.
 4. **Conversion analytics dashboard** — conversion rates, time-to-convert, owner trends.
 
-## AI Usage Note
+## AI Usage Note:
 
 Approximately **30% of this project** was developed with the assistance of **ChatGPT**. AI was used for:
 - Project scaffolding and boilerplate generation
