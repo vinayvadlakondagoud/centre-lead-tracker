@@ -7,14 +7,13 @@ A full-stack lead management application for tracking learning centre enquiries 
 | Field | Value |
 |-------|-------|
 | **Name** | Vinay Vadlakonda |
-| **Candidate Code** | 31716 |
 | **Frontend** | React.js (Vite) |
 | **Backend** | Node.js + Express |
 | **Database** | MySQL (Knex.js) |
 
-## Candidate-Specific Rule
+## Audit Log Feature
 
-**Rule: Audit Log for Status Changes (last digit 6)** — Every status change on a lead is recorded in a `status_audit_logs` table with old status, new status, who changed it, and why. This provides a complete audit trail for pipeline movements, admin overrides, and auto-advances triggered by follow-up outcomes.
+**Audit Log for Status Changes** — Every status change on a lead is recorded in a `status_audit_logs` table with old status, new status, who changed it, and why. This provides a complete audit trail for pipeline movements, admin overrides, and auto-advances triggered by follow-up outcomes.
 
 ## Screen Recording
 
@@ -140,7 +139,7 @@ npm run dev             # Starts on http://localhost:5173
 | 3 | **Knex.js over raw SQL** | Migration system + query builder prevents SQL injection and makes schema version-controlled. |
 | 4 | **Closed leads — notes-only editing** | Converted/Lost are final decisions. Full edits would corrupt pipeline data. |
 | 5 | **Bar chart for status distribution** | Shows pipeline health at a glance — most important view for the team. |
-| 6 | **Status audit log (Rule: 31716)** | Every status change recorded with old/new status, changed by, and reason. Accountability without authentication. |
+| 6 | **Status audit log** | Every status change recorded with old/new status, changed by, and reason. Accountability without authentication. |
 
 ## Known Limitations
 
